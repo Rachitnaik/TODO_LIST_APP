@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Container, Typography, Paper, List, Button, Stack, Pagination } from "@mui/material";
+import { Container, Typography, Paper, List, Button, Stack, CircularProgress } from "@mui/material";
 import TaskInput from "./components/TaskInput";
 import TaskItem from "./components/TaskItem";
-import { addTask, toggleTaskCompletion, updateTask, removeTask, clearAllTasks } from "./utils/taskUtils";
+import { addTask, toggleTaskCompletion, updateTask, removeTask } from "./utils/taskUtils";
 import axios from "axios";
 
 
@@ -10,18 +10,30 @@ const API_URL = import.meta.env.VITE_API_URL //for vite for  we have to keep the
 
 const App = () => {
   const [tasks, setTasks] = useState([]);
-  const [page, setPage] = useState(1);
-  const tasksPerPage = 10;
+  const [loading, setLoading] = useState(true); // Loading state
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get(API_URL);
-        setTasks(response.data);
+        let fetchedTasks = response.data;
+
+        // Duplicate the tasks to create 10,000 tasks
+        const largeDataset = Array.from({ length: 50 }, (_, i) =>
+          fetchedTasks.map((task) => ({
+            ...task,
+            id: `${task.id}-${i}`, // Ensure unique ID
+          }))
+        ).flat();
+
+        setTasks(largeDataset);
       } catch (error) {
         console.error("Error fetching tasks:", error);
+      } finally {
+        setLoading(false); // Stop loading
       }
     };
+
     fetchTasks();
   }, []);
 
@@ -29,11 +41,9 @@ const App = () => {
   const handleToggleTask = (index) => setTasks((prev) => toggleTaskCompletion(prev, index));
   const handleUpdateTask = (index, newText) => setTasks((prev) => updateTask(prev, index, newText));
   const handleRemoveTask = (index) => setTasks((prev) => removeTask(prev, index));
-  const handleClearAll = () => setTasks(clearAllTasks());
-
-  // Paginated tasks
-  const startIndex = (page - 1) * tasksPerPage;
-  const paginatedTasks = tasks.slice(startIndex, startIndex + tasksPerPage);
+  const handleClearAll = () => {
+    setTasks([]);
+  };
 
   return (
     <Container maxWidth="md">
@@ -41,36 +51,39 @@ const App = () => {
         <Typography variant="h5" mb={2}>To-Do List 📝</Typography>
         <TaskInput addTask={handleAddTask} />
 
-        <List>
-          {paginatedTasks.map((task, index) => (
-            
-            <TaskItem
-              key={index}
-              task={task}
-              index={startIndex + index}
-              toggleTaskCompletion={handleToggleTask}
-              updateTask={handleUpdateTask}
-              removeTask={handleRemoveTask}
-            />
-          ))}
-        </List>
 
-        {/* Pagination Controls */}
-        <Pagination
-          count={Math.ceil(tasks.length / tasksPerPage)}
-          page={page}
-          onChange={(event, value) => setPage(value)}
-          sx={{ mt: 2, display: "flex", justifyContent: "center" }}
-        />
+        {loading ? (
+          <Stack alignItems="center" justifyContent="center" sx={{ height: "300px" }}>
+            <CircularProgress />
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Loading tasks...
+            </Typography>
+          </Stack>
+        ) : (
+          <div style={{ maxHeight: "400px", overflowY: "auto", border: "1px solid #ccc", padding: "10px", borderRadius: "5px" }}>
+            <List>
+              {tasks.map((task, index) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  toggleTaskCompletion={handleToggleTask}
+                  updateTask={handleUpdateTask}
+                  removeTask={handleRemoveTask}
+                />
+              ))}
+            </List>
+          </div>
+        )}
+
+        {tasks.length > 0 && !loading && (
+          <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
+            <Button variant="contained" color="error" onClick={handleClearAll}>
+              Clear All
+            </Button>
+          </Stack>
+        )}
       </Paper>
-
-      {tasks.length > 0 && (
-        <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
-          <Button variant="contained" color="error" onClick={handleClearAll}>
-            Clear All
-          </Button>
-        </Stack>
-      )}
     </Container>
   );
 };
