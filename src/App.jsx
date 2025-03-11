@@ -12,7 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL //for vite for  we have to keep the
 
 const App = () => {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const fetchTasks = async () => {
