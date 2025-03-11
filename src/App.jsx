@@ -4,6 +4,8 @@ import TaskInput from "./components/TaskInput";
 import TaskItem from "./components/TaskItem";
 import { addTask, toggleTaskCompletion, updateTask, removeTask } from "./utils/taskUtils";
 import axios from "axios";
+import { FixedSizeList } from "react-window";
+
 
 
 const API_URL = import.meta.env.VITE_API_URL //for vite for  we have to keep the prefix as vite
@@ -22,7 +24,7 @@ const App = () => {
         const largeDataset = Array.from({ length: 50 }, (_, i) =>
           fetchedTasks.map((task) => ({
             ...task,
-            id: `${task.id}-${i}`, // Ensure unique ID
+            id: `${task.id}-${i}`, 
           }))
         ).flat();
 
@@ -30,7 +32,7 @@ const App = () => {
       } catch (error) {
         console.error("Error fetching tasks:", error);
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false); 
       }
     };
 
@@ -61,18 +63,25 @@ const App = () => {
           </Stack>
         ) : (
           <div style={{ maxHeight: "400px", overflowY: "auto", border: "1px solid #ccc", padding: "10px", borderRadius: "5px" }}>
-            <List>
-              {tasks.map((task, index) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  toggleTaskCompletion={handleToggleTask}
-                  updateTask={handleUpdateTask}
-                  removeTask={handleRemoveTask}
-                />
-              ))}
-            </List>
+          <FixedSizeList
+          height={200}  
+          width="100%" 
+          itemSize={50} 
+          itemCount={tasks.length}
+        >
+          {({ index, style }) => (
+            <div style={style}>
+              <TaskItem
+                key={tasks[index].id}
+                task={tasks[index]}
+                index={index}
+                toggleTaskCompletion={handleToggleTask}
+                updateTask={handleUpdateTask}
+                removeTask={handleRemoveTask}
+              />
+            </div>
+          )}
+        </FixedSizeList>
           </div>
         )}
 
